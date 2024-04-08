@@ -1,0 +1,76 @@
+services:
+  base:
+    build:
+      context: .
+      args:
+        NAME: ${NAME}
+        EMAIL: ${EMAIL}
+    image: mikelorant/from-ticket-to-pull-request:base
+    stdin_open: true
+    tty: true
+    environment:
+      REPOSITORY: ${ENDPOINT}
+    env_file:
+      - .env
+    volumes:
+      - base_root:/root/
+    ports:
+      - 8080:8080
+    deploy:
+      replicas: 0
+
+  exercise-1:
+    extends:
+      service: base
+    build:
+      target: exercise-1
+    image: mikelorant/from-ticket-to-pull-request:exercise-1
+
+  exercise-2:
+    extends:
+      service: base
+    build:
+      target: exercise-2
+    image: mikelorant/from-ticket-to-pull-request:exercise-2
+
+  server:
+    image: gitea/gitea:1.21
+    environment:
+      GITEA__log__LEVEL: warn
+      GITEA__repository__DEFAULT_PUSH_CREATE_PRIVATE: false
+      GITEA__repository__ENABLE_PUSH_CREATE_USER: true
+      GITEA__security__INSTALL_LOCK: true
+      GITEA__server__ROOT_URL: https://${ENDPOINT}
+    volumes:
+      - server_data:/data
+    ports:
+      - 3000:3000
+    depends_on:
+      - tunnel
+
+  tunnel:
+    image: ngrok/ngrok:latest
+    env_file:
+      - .env
+      - .env.ngrok
+    command:
+      - http
+      - --domain=${ENDPOINT}
+      - server:3000
+
+  importer:
+    build:
+      target: importer
+    image: mikelorant/from-ticket-to-pull-request:importer
+    environment:
+      REPOSITORY: ${ENDPOINT}
+    env_file:
+      - .env
+    volumes:
+      - server_data:/data
+    depends_on:
+      - server
+
+volumes:
+  base_root:
+  server_data:
