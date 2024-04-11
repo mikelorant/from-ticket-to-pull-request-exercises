@@ -11,7 +11,8 @@ services:
     environment:
       REPOSITORY: ${ENDPOINT}
     env_file:
-      - .env
+      - path: .env
+        required: true
     volumes:
       - base_root:/root/
     ports:
@@ -51,8 +52,10 @@ services:
   tunnel:
     image: ngrok/ngrok:latest
     env_file:
-      - .env
-      - .env.ngrok
+      - path: .env
+        required: true
+      - path: .env.ngrok
+        required: false
     command:
       - http
       - --domain=${ENDPOINT}
@@ -65,7 +68,8 @@ services:
     environment:
       REPOSITORY: ${ENDPOINT}
     env_file:
-      - .env
+      - path: .env
+        required: true
     volumes:
       - server_data:/data
     depends_on:
